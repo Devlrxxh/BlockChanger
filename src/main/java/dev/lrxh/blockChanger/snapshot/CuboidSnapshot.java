@@ -16,10 +16,9 @@ public class CuboidSnapshot {
 
   private final Map<Chunk, ChunkSectionSnapshot> snapshots;
 
-  private CuboidSnapshot(final Map<Chunk, ChunkSectionSnapshot> snapshots) {
+  private CuboidSnapshot(final Map<Chunk, ChunkSectionSnapshot> snapshots, boolean add) {
     this.snapshots = Collections.unmodifiableMap(snapshots);
-
-    snapshots.forEach((chunk, snapshot) -> SnapshotService.addSnapshot(snapshot, chunk.getWorld()));
+    if (add) snapshots.forEach((chunk, snapshot) -> SnapshotService.addSnapshot(snapshot, chunk.getWorld()));
   }
 
   public static CompletableFuture<CuboidSnapshot> create(final Location pos1, final Location pos2) {
@@ -64,7 +63,7 @@ public class CuboidSnapshot {
           final Map.Entry<Chunk, ChunkSectionSnapshot> entry = future.join();
           result.put(entry.getKey(), entry.getValue());
         }
-        return new CuboidSnapshot(result);
+        return new CuboidSnapshot(result, true);
       });
   }
 
@@ -82,7 +81,7 @@ public class CuboidSnapshot {
 
   @Override
   public CuboidSnapshot clone() {
-    return new CuboidSnapshot(new HashMap<>(snapshots));
+    return new CuboidSnapshot(new HashMap<>(snapshots), false);
   }
 
   public CompletableFuture<CuboidSnapshot> offset(final int xOffset, final int zOffset) {
@@ -91,7 +90,7 @@ public class CuboidSnapshot {
 
   public CompletableFuture<CuboidSnapshot> offset(final int xOffset, final int zOffset, final Map<ChunkPosition, Chunk> preloadedChunks) {
     if (snapshots.isEmpty()) {
-      return CompletableFuture.completedFuture(new CuboidSnapshot(Collections.emptyMap()));
+      return CompletableFuture.completedFuture(new CuboidSnapshot(Collections.emptyMap(), false));
     }
 
     if (xOffset % 16 != 0 || zOffset % 16 != 0) {

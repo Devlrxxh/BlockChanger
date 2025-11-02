@@ -3,20 +3,28 @@ package dev.lrxh.blockChanger.snapshot;
 import net.minecraft.world.level.ChunkPos;
 import org.bukkit.World;
 
-import java.util.HashMap;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class SnapshotService {
-  private static final HashMap<ChunkPos, QueuedChunkSnapshot> chunkSnapshots = new HashMap<>();
+  // key: "<world-uuid>:<chunkX>:<chunkZ>"
+  private static final ConcurrentHashMap<String, QueuedChunkSnapshot> chunkSnapshots = new ConcurrentHashMap<>();
 
-  public static void addSnapshot(final ChunkSectionSnapshot snapshot, final World world) {
-    chunkSnapshots.put(snapshot.position(), new QueuedChunkSnapshot(world.getName(), snapshot));
+  private static String makeKey(final UUID worldUUID, final int chunkX, final int chunkZ) {
+    return worldUUID.toString() + ":" + chunkX + ":" + chunkZ;
   }
 
-  public static QueuedChunkSnapshot getSnapshot(final ChunkPos position) {
-    if (chunkSnapshots.containsKey(position)) {
-      return chunkSnapshots.remove(position);
-    }
+  public static void addSnapshot(final ChunkSectionSnapshot snapshot, final World world) {
+    final ChunkPos pos = snapshot.position();
+    final String key = makeKey(world.getUID(), pos.x, pos.z);
+    chunkSnapshots.put(key, new QueuedChunkSnapshot(world.getName(), snapshot));
+  }
 
-    return null;
+  public static QueuedChunkSnapshot getSnapshot(final World world, final ChunkPos position) {
+    return chunkSnapshots.get(makeKey(world.getUID(), position.x, position.z));
+  }
+
+  public static void removeSnapshot(final World world, final ChunkPos position) {
+    chunkSnapshots.remove(makeKey(world.getUID(), position.x, position.z));
   }
 }

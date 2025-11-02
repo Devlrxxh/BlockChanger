@@ -54,7 +54,6 @@ import org.bukkit.craftbukkit.block.data.CraftBlockData;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.server.PluginDisableEvent;
-import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.event.world.WorldLoadEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -104,7 +103,7 @@ public class BlockChanger {
     } catch (Exception ignored) {
     }
 
-    loadedWorlds = new HashSet<>();
+    loadedWorlds = ConcurrentHashMap.newKeySet();
 
     plugin.getServer().getPluginManager().registerEvents(new Listener() {
       @EventHandler
@@ -474,7 +473,7 @@ public class BlockChanger {
 
       final WorldLoader.DataLoadContext context = craftServer.getServer().worldLoader;
 
-      final LevelStorageSource storageSource = LevelStorageSource.createDefault(craftServer.getWorldContainer().toPath());
+      final LevelStorageSource storageSource = LevelStorageSource.createDefault(craftServer.getWorldContainer().toPath().resolve(creator.name()));
 
       final ResourceKey<LevelStem> actualDimension = switch (creator.environment()) {
         case NORMAL -> LevelStem.OVERWORLD;
@@ -487,7 +486,7 @@ public class BlockChanger {
         levelStorageAccess = VirtualLevelStorageSource.createVirtual(
         storageSource,
         creator.name(),
-        craftServer.getWorldContainer().toPath(),
+        craftServer.getWorldContainer().toPath().resolve(creator.name()),
         actualDimension
       );
 
@@ -537,17 +536,6 @@ public class BlockChanger {
       craftServer.getServer().addLevel(serverLevel);
       serverLevel.setSpawnSettings(true);
 
-      Listener chunkUnload = new Listener() {
-        @EventHandler
-        public void onChunkUnload(ChunkLoadEvent e) {
-          if (e.getWorld().getName().equalsIgnoreCase(creator.name())) {
-            e.getChunk().addPluginChunkTicket(plugin);
-          }
-        }
-      };
-
-      Bukkit.getPluginManager().registerEvents(chunkUnload, plugin);
-
       Bukkit.getScheduler().getMainThreadExecutor(plugin).execute(() -> {
         WorldBorder worldborder = serverLevel.getWorldBorder();
         worldborder.applySettings(primaryLevelData.getWorldBorder());
@@ -560,12 +548,24 @@ public class BlockChanger {
       } catch (Exception ignored) {
 
       }
-      VirtualWorld v = new VirtualWorld(serverLevel, chunkUnload);
+      VirtualWorld v = new VirtualWorld(serverLevel);
 
       loadedWorlds.add(v);
 
       return v;
     }, EXECUTOR);
+  }
+
+
+  public static void paste(World world, CuboidSnapshot snapshot) {
+    for (Map.Entry<Chunk, ChunkSectionSnapshot> entry : snapshot.getSnapshots().entrySet()) {
+      final ChunkSectionSnapshot chunkSnapshot = entry.getValue();
+      final ChunkPos pos = chunkSnapshot.position();
+      final int x = pos.x;
+      final int z = pos.z;
+
+      world.getChunkAtAsync(x, z, true, true).thenAccept(chunk -> BlockChanger.restoreChunkBlockSnapshot(chunk, chunkSnapshot, false).thenRun(() -> BlockChanger.updateLighting(Set.of(chunk))));
+    }
   }
 
   @InternalApi
@@ -619,4 +619,8 @@ public class BlockChanger {
       .thenRun(() -> LightingService.updateLighting(snapshot.getSnapshots().keySet(), false));
   }
 
+  @InternalApi
+  public static void log(String message) {
+    plugin.getLogger().info(message);
+  }
 }
