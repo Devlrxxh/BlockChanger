@@ -26,6 +26,7 @@ import net.minecraft.world.Difficulty;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.*;
+import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.BiomeManager;
 import net.minecraft.world.level.biome.Biomes;
@@ -524,7 +525,7 @@ public class BlockChanger {
 
       Bukkit.getScheduler().getMainThreadExecutor(plugin).execute(() -> {
         WorldBorder worldborder = serverLevel.getWorldBorder();
-        var wbSettings = primaryLevelData.getLegacyWorldBorderSettings();
+        Optional<WorldBorder.Settings> wbSettings = primaryLevelData.getLegacyWorldBorderSettings();
         wbSettings.ifPresent(worldborder::applySettings);
         new WorldLoadEvent(serverLevel.getWorld()).callEvent();
       });
