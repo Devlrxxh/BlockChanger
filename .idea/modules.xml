@@ -2,6 +2,8 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/blockchanger.main.iml" filepath="$PROJECT_DIR$/.idea/modules/blockchanger.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/blockchanger.test.iml" filepath="$PROJECT_DIR$/.idea/modules/blockchanger.test.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/paperweight-test-plugin.main.iml" filepath="$PROJECT_DIR$/.idea/modules/paperweight-test-plugin.main.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/paperweight-test-plugin.test.iml" filepath="$PROJECT_DIR$/.idea/modules/paperweight-test-plugin.test.iml" />
     </modules>
